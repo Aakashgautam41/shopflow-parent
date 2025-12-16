@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  # --- TRACING: Zipkin ---
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  # --- LOGGING: Elasticsearch (The Database) ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+
+  # --- LOGGING: Logstash (The Receiver) ---
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.10
+    container_name: logstash
+    ports:
+      - "5000:5000" # Our Java apps send logs here
+      - "9600:9600"
+    volumes:
+      - ./pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+
+  # --- LOGGING: Kibana (The UI) ---
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
