@@ -1,0 +1,28 @@
+server:
+  port: 8080  # The standard entry point
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true # Magic: Creates routes automatically based on service ID
+      routes:
+        # Route 1: Product Service
+        - id: product-service
+          uri: lb://product-service  # "lb" = Load Balanced (uses Eureka)
+          predicates:
+            - Path=/products/** # Matches http://localhost:8080/products/1
+            
+        # Route 2: Order Service
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/orders/** # Matches http://localhost:8080/orders
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
