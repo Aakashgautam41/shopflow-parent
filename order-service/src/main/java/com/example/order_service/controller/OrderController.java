@@ -13,6 +13,8 @@ import com.example.order_service.dto.OrderRequest;
 import com.example.order_service.entity.Order;
 import com.example.order_service.repository.OrderRepository;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
 @RestController
 @RequestMapping("/orders")
 public class OrderController {
@@ -27,6 +29,7 @@ public class OrderController {
     }
 
     @PostMapping
+    @CircuitBreaker(name = "productService", fallbackMethod = "placeOrderFallback")
     public Order placeOrder(@RequestBody OrderRequest request) {
         log.info("Placing order for product: {}", request.getProductId());
         ProductDTO product = productClient.getProductById(request.getProductId());
@@ -39,6 +42,23 @@ public class OrderController {
 
         log.info("Order placed successfully with ID: {}", order.getId());
         return orderRepository.save(order);
+    }
+
+    // --- FALLBACK METHOD ---
+    // Rule 1: Must have the exact same signature as the original method.
+    // Rule 2: Must accept a Throwable as the last argument.
+    public Order placeOrderFallback(OrderRequest request, Throwable t) {
+        log.info("Fallback executed! Reason: " + t.getMessage());
+
+        // Return a safe "Failure" response instead of crashing
+        Order order = new Order();
+        order.setProductId(request.getProductId());
+        order.setProductName("Unavailable - Please Retry Later");
+        order.setQuantity(request.getQuantity());
+        order.setTotalPrice(0.0);
+
+        log.info("Fallback executed! Reason: " + t.getMessage());
+        return order;
     }
 
 }
