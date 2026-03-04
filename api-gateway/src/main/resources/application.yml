@@ -26,3 +26,12 @@ eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # MUST match the "iss" field in your token exactly!
+          issuer-uri: http://localhost:8180/realms/ShopFlow
+          jwk-set-uri: http://localhost:8180/realms/ShopFlow/protocol/openid-connect/certs
